@@ -28,6 +28,8 @@ class _DetailScreenState extends State<DetailScreen> {
 
   UserController userController = UserController();
 
+  final GlobalKey<ScaffoldMessengerState> scafKey = GlobalKey();
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -35,6 +37,7 @@ class _DetailScreenState extends State<DetailScreen> {
         WidgetsBinding.instance.focusManager.primaryFocus?.unfocus();
       },
       child: Scaffold(
+        key: scafKey,
         appBar: AppBar(
           title: const Text('Detail'),
           elevation: 0,
@@ -46,7 +49,9 @@ class _DetailScreenState extends State<DetailScreen> {
               Center(
                 child: CircleAvatar(
                   radius: 60,
-                  child: Image(image: NetworkImage(widget.detail.avatar)),
+                  child: Image(
+                    image: NetworkImage(widget.detail.avatar),
+                  ),
                 ),
               ),
               Form(
@@ -70,7 +75,7 @@ class _DetailScreenState extends State<DetailScreen> {
                         }
                         return null;
                       },
-                    )
+                    ),
                   ],
                 ),
               ),
@@ -90,6 +95,12 @@ class _DetailScreenState extends State<DetailScreen> {
                           widget.detail.id, dataUpdate);
                       if (context.mounted) {
                         AutoRouter.of(context).pop();
+                        //showSnackBar by context
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Edit Success"),
+                          ),
+                        );
                       }
                     }
                   },
@@ -106,6 +117,18 @@ class _DetailScreenState extends State<DetailScreen> {
                       //context.popRoute();
                       //Navigate by AutoRouter
                       AutoRouter.of(context).pop();
+                      //showSnackBar by context
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("Delete Success"),
+                        ),
+                      );
+                      //showSnackBar by global key
+                      // scafKey.currentState!.showSnackBar(
+                      //   const SnackBar(
+                      //     content: Text("Delete Success"),
+                      //   ),
+                      // );
                     }
                   },
                   child: const Text('Delete'),

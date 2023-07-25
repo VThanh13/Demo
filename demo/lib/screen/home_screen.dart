@@ -59,7 +59,10 @@ class _HomeScreenState extends State<HomeScreen> {
             if (state is UserLoadingState) {
               return const Center(
                 child: SizedBox(
-                    height: 30, width: 30, child: CircularProgressIndicator()),
+                  height: 30,
+                  width: 30,
+                  child: CircularProgressIndicator(),
+                ),
               );
             } else if (state is UserErrorState) {
               return const Text('Error!');
@@ -83,7 +86,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   width: double.maxFinite,
                   height: MediaQuery.of(context).size.height,
                   child: ListView.builder(
-                      //key: UniqueKey(),
                       controller: scrollController,
                       itemCount: userBloc.users.length,
                       itemBuilder: (context, index) {
@@ -99,7 +101,11 @@ class _HomeScreenState extends State<HomeScreen> {
                             //Naviagte by AutoRoute
                             AutoRouter.of(context)
                                 .push(DetailRoute(detail: detail))
-                                .then((_) => userBloc.add(UserInitialEvent()));
+                                .then(
+                                  (_) => userBloc.add(
+                                    UserInitialEvent(),
+                                  ),
+                                );
                           },
                           child: Container(
                             height: 100,
@@ -119,9 +125,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         userBloc.users[index].avatar),
                                   ),
                                 ),
-                                const SizedBox(
-                                  width: 10,
-                                ),
+                                const SizedBox(width: 10),
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   mainAxisAlignment: MainAxisAlignment.center,
@@ -135,7 +139,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     Text(
                                       userBloc.users[index].address,
                                       style: const TextStyle(fontSize: 16),
-                                    )
+                                    ),
                                   ],
                                 ),
                               ],
