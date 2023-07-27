@@ -6,7 +6,7 @@ import '../models/user_model.dart';
 
 class UserController {
   List<User> user = [];
-  List<User> moreItems = [];
+  List<User> moreItems = [User(name: "", avatar: "", address: "", id: "")];
 
   final baseUrl = 'https://64bdcfeb2320b36433c7d728.mockapi.io/users';
 
@@ -14,7 +14,7 @@ class UserController {
 
   Future<void> getUserInfo() async {
     try {
-      final response = await UserService().getUser('$baseUrl?page=1&limit=8');
+      final response = await UserService().getUser('$baseUrl?page=1&limit=10');
       if (response.statusCode == 200) {
         user.clear();
         user.addAll((response.data ?? []).map((e) => User.fromJson(e)));
@@ -52,6 +52,7 @@ class UserController {
           user.addAll(moreItems);
         } else {
           isLoadMore = false;
+          moreItems.clear();
         }
       } else {
         if (kDebugMode) {

@@ -8,3 +8,5 @@ class UserInitialEvent extends UserEvent {}
 class ClickToEditUserEvent extends UserEvent {}
 
 class ClickToRemoveUserEvent extends UserEvent {}
+
+class ClickToLoadMoreUserEvent extends UserEvent {}

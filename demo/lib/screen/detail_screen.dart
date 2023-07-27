@@ -1,7 +1,9 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:demo/controller/user_controller.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import '../core/bloc/user_bloc/user_bloc.dart';
 import '../models/user_model.dart';
 
 @RoutePage()
@@ -17,7 +19,40 @@ class _DetailScreenState extends State<DetailScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
 
+  UserController userController = UserController();
+  final UserBloc userBloc = UserBloc();
+
   GlobalKey<FormState> formKey = GlobalKey<FormState>();
+  final GlobalKey<ScaffoldMessengerState> scafKey = GlobalKey();
+
+  bool isReload = false;
+  User valueBack = User(name: "", avatar: "", address: "", id: "");
+
+  Future<void> updateUser() async {
+    final Map<String, String> dataUpdate = {
+      "id": widget.detail.id,
+      "avatar": widget.detail.avatar,
+      "name": _nameController.text,
+      "address": _addressController.text
+    };
+
+    if (formKey.currentState!.validate()) {
+      await userController.updateUser(widget.detail.id, dataUpdate);
+      if (context.mounted) {
+        isReload = true;
+        valueBack = User(
+            id: widget.detail.id,
+            avatar: widget.detail.avatar,
+            name: _nameController.text,
+            address: _addressController.text);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Edit Success"),
+          ),
+        );
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -25,10 +60,6 @@ class _DetailScreenState extends State<DetailScreen> {
     _nameController.text = widget.detail.name;
     _addressController.text = widget.detail.address;
   }
-
-  UserController userController = UserController();
-
-  final GlobalKey<ScaffoldMessengerState> scafKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
@@ -41,6 +72,14 @@ class _DetailScreenState extends State<DetailScreen> {
         appBar: AppBar(
           title: const Text('Detail'),
           elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              isReload == true
+                  ? AutoRouter.of(context).pop(valueBack)
+                  : AutoRouter.of(context).pop();
+            },
+          ),
         ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(10, 30, 10, 0),
@@ -82,27 +121,8 @@ class _DetailScreenState extends State<DetailScreen> {
               Padding(
                 padding: const EdgeInsets.only(top: 20),
                 child: ElevatedButton(
-                  onPressed: () async {
-                    final Map<String, String> dataUpdate = {
-                      "id": widget.detail.id,
-                      "avatar": widget.detail.avatar,
-                      "name": _nameController.text,
-                      "address": _addressController.text
-                    };
-                    if (formKey.currentState!.validate()) {
-                      formKey.currentState!.save();
-                      await userController.updateUser(
-                          widget.detail.id, dataUpdate);
-                      if (context.mounted) {
-                        AutoRouter.of(context).pop();
-                        //showSnackBar by context
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text("Edit Success"),
-                          ),
-                        );
-                      }
-                    }
+                  onPressed: () {
+                    updateUser();
                   },
                   child: const Text('Edit'),
                 ),
@@ -110,26 +130,40 @@ class _DetailScreenState extends State<DetailScreen> {
               Padding(
                 padding: const EdgeInsets.only(top: 20),
                 child: ElevatedButton(
-                  onPressed: () async {
-                    await userController.deleteUser(widget.detail.id);
-                    if (context.mounted) {
-                      //Navigate by context
-                      //context.popRoute();
-                      //Navigate by AutoRouter
-                      AutoRouter.of(context).pop();
-                      //showSnackBar by context
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Delete Success"),
-                        ),
-                      );
-                      //showSnackBar by global key
-                      // scafKey.currentState!.showSnackBar(
-                      //   const SnackBar(
-                      //     content: Text("Delete Success"),
-                      //   ),
-                      // );
-                    }
+                  onPressed: () {
+                    showDialog(
+                        context: context,
+                        builder: (builder) {
+                          return CupertinoAlertDialog(
+                            title: const Text('Do you want to delete?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () async {
+                                  await userController
+                                      .deleteUser(widget.detail.id);
+                                  if (context.mounted) {
+                                    isReload = true;
+                                    // AutoRouter.of(context).popUntil((route) {
+                                    //   route.settings.name == HomeRoute.name;
+                                    //   value;
+                                    //   return true;
+                                    // });
+                                    String value = widget.detail.id;
+                                    Navigator.pop(context);
+                                    AutoRouter.of(context).pop(value);
+                                  }
+                                },
+                                child: const Text('Delete'),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                },
+                                child: const Text('Cancel'),
+                              ),
+                            ],
+                          );
+                        });
                   },
                   child: const Text('Delete'),
                 ),

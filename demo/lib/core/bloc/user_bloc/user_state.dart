@@ -20,6 +20,15 @@ class UserLoadedState extends UserState {
 
 class UserErrorState extends UserState {}
 
+class UserLoadingMore extends UserState {}
+
+class UserLoadMoreSuccess extends UserState {
+  final List<User> users;
+  UserLoadMoreSuccess({
+    required this.users,
+  });
+}
+
 class ClickToEditUserState extends UserState {}
 
 class ClickToRemoveUserState extends UserState {}

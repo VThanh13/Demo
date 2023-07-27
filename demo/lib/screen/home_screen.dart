@@ -4,6 +4,7 @@ import 'package:demo/core/bloc/user_bloc/user_bloc.dart';
 import 'package:demo/core/bloc/user_bloc/user_event.dart';
 import 'package:demo/core/bloc/user_bloc/user_state.dart';
 import 'package:demo/router/app_router.gr.dart';
+import 'package:demo/screen/user_item.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -19,6 +20,31 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final UserBloc userBloc = UserBloc();
+  UserController userController = UserController();
+  final ScrollController scrollController = ScrollController();
+
+  User detail = User(name: '', avatar: '', address: '', id: '');
+
+  void reloadUserScreen() {
+    userController.isLoadMore = true;
+    userBloc.page = 1;
+    userBloc.users.clear();
+    userBloc.add(UserInitialEvent());
+  }
+
+  void navigateToDetail() {
+    AutoRouter.of(context).push(DetailRoute(detail: detail)).then((value) {
+      if (value.runtimeType == String) {
+        userBloc.users.removeWhere((element) => element.id == value);
+        userBloc.add(ClickToRemoveUserEvent());
+      }
+      if (value.runtimeType == User) {
+        userBloc.users[userBloc.users
+            .indexWhere((element) => element.id == detail.id)] = value as User;
+        userBloc.add(ClickToEditUserEvent());
+      }
+    });
+  }
 
   @override
   void initState() {
@@ -28,23 +54,16 @@ class _HomeScreenState extends State<HomeScreen> {
     scrollController.addListener(() async {
       if (scrollController.position.pixels ==
           scrollController.position.maxScrollExtent) {
-        if (userController.isLoadMore == true) {
-          page++;
-          await userController.loadMoreUser(page);
-          setState(() {
-            userController.user;
-            userBloc.users = userController.user;
-          });
-        }
+        userBloc.add(ClickToLoadMoreUserEvent());
       }
     });
   }
 
-  UserController userController = UserController();
-  final ScrollController scrollController = ScrollController();
-  int page = 1;
-
-  User detail = User(name: '', avatar: '', address: '', id: '');
+  @override
+  void dispose() {
+    scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,107 +72,62 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text('Home'),
         elevation: 0,
       ),
-      body: BlocConsumer(
-          bloc: userBloc,
-          builder: (context, state) {
-            if (state is UserLoadingState) {
-              return const Center(
-                child: SizedBox(
-                  height: 30,
-                  width: 30,
-                  child: CircularProgressIndicator(),
-                ),
-              );
-            } else if (state is UserErrorState) {
-              return const Text('Error!');
-            } else if (state is UserLoadedState) {
-              return RefreshIndicator(
-                onRefresh: () async {
-                  setState(() {
-                    page = 1;
-                    userController.isLoadMore = true;
-                  });
-                  userBloc.users.clear();
-                  userBloc.add(UserInitialEvent());
-                  await userController.getUserInfo();
-                  userController.user;
-                  userBloc.users;
-                },
-                color: Colors.white,
-                backgroundColor: Colors.blue,
-                displacement: 20,
-                child: SizedBox(
-                  width: double.maxFinite,
-                  height: MediaQuery.of(context).size.height,
-                  child: ListView.builder(
-                      controller: scrollController,
-                      itemCount: userBloc.users.length,
-                      itemBuilder: (context, index) {
-                        return InkWell(
-                          key: ObjectKey(userBloc.users[index]),
-                          onTap: () {
-                            setState(() {
-                              detail = userBloc.users[index];
-                            });
-                            //Navigate by context
-                            // context.pushRoute(DetailRoute(detail: detail)).then(
-                            //     (value) => userBloc.add(UserInitialEvent()));
-                            //Naviagte by AutoRoute
-                            AutoRouter.of(context)
-                                .push(DetailRoute(detail: detail))
-                                .then(
-                                  (_) => userBloc.add(
-                                    UserInitialEvent(),
-                                  ),
+      body: BlocBuilder(
+        bloc: userBloc,
+        builder: (context, state) {
+          if (state is UserLoadingState) {
+            return const Center(
+              child: SizedBox(
+                height: 30,
+                width: 30,
+                child: CircularProgressIndicator(),
+              ),
+            );
+          } else if (state is UserErrorState) {
+            return const Text('Error!');
+          } else if (state is UserLoadedState) {
+            return RefreshIndicator(
+              onRefresh: () async {
+                reloadUserScreen();
+              },
+              color: Colors.white,
+              backgroundColor: Colors.blue,
+              displacement: 20,
+              child: SizedBox(
+                width: double.maxFinite,
+                height: MediaQuery.of(context).size.height,
+                child: ListView.builder(
+                    shrinkWrap: true,
+                    controller: scrollController,
+                    itemCount: userBloc.users.length + 1,
+                    itemBuilder: (context, index) {
+                      return index < userBloc.users.length
+                          ? InkWell(
+                              onTap: () {
+                                detail = userBloc.users[index];
+                                navigateToDetail();
+                              },
+                              child: UserItem(
+                                userBloc: userBloc,
+                                index: index,
+                              ),
+                            )
+                          : userController.isLoadMore == true &&
+                                  userBloc.moreItems.isNotEmpty
+                              ? const Center(
+                                  child: CircularProgressIndicator(),
+                                )
+                              : const Center(
+                                  child: Text('No more items'),
                                 );
-                          },
-                          child: Container(
-                            height: 100,
-                            width: double.maxFinite,
-                            padding: const EdgeInsets.fromLTRB(15, 10, 0, 10),
-                            color: index % 2 == 0
-                                ? const Color(0xffFAFAFA)
-                                : const Color(0xffE5E5E5),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              children: [
-                                CircleAvatar(
-                                  radius: 26,
-                                  child: Image(
-                                    image: NetworkImage(
-                                        userBloc.users[index].avatar),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      userBloc.users[index].name,
-                                      style: const TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.w500),
-                                    ),
-                                    Text(
-                                      userBloc.users[index].address,
-                                      style: const TextStyle(fontSize: 16),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }),
-                ),
-              );
-            } else {
-              return const SizedBox();
-            }
-          },
-          listener: (context, state) {}),
+                    }),
+              ),
+            );
+          } else {
+            return const SizedBox();
+          }
+        },
+      ),
     );
   }
 }

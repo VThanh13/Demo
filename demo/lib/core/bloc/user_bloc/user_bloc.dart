@@ -12,19 +12,23 @@ class UserBloc extends Bloc<UserEvent, UserState> {
     on<UserInitialEvent>(userInitialEvent);
     on<ClickToEditUserEvent>(clickToEditUserEvent);
     on<ClickToRemoveUserEvent>(clickToRemoveUserEvent);
+    on<ClickToLoadMoreUserEvent>(clickToLoadMoreUserEvent);
   }
 
   List<User> users = [];
   List<User> moreItems = [];
+  int page = 1;
+
+  UserController userController = UserController();
+
   FutureOr<void> userInitialEvent(
       UserInitialEvent event, Emitter<UserState> emit) async {
     emit(UserLoadingState());
-    UserController userController = UserController();
     try {
       await userController.getUserInfo();
       users = userController.user;
       moreItems = userController.moreItems;
-      emit(UserLoadedState(users: userController.user));
+      emit(UserLoadedState(users: users));
     } catch (e) {
       emit(UserErrorState());
     }
@@ -32,11 +36,26 @@ class UserBloc extends Bloc<UserEvent, UserState> {
 
   FutureOr<void> clickToEditUserEvent(
       ClickToEditUserEvent event, Emitter<UserState> emit) {
-    emit(ClickToEditUserState());
+    emit(UserLoadedState(users: users));
   }
 
   FutureOr<void> clickToRemoveUserEvent(
-      ClickToRemoveUserEvent event, Emitter<UserState> emit) {
-    emit(ClickToRemoveUserState());
+      ClickToRemoveUserEvent event, Emitter<UserState> emit) async {
+    emit(UserLoadedState(users: users));
+  }
+
+  FutureOr<void> clickToLoadMoreUserEvent(
+      ClickToLoadMoreUserEvent event, Emitter<UserState> emit) async {
+    try {
+      if (userController.isLoadMore == true) {
+        page++;
+        await userController.loadMoreUser(page);
+      }
+      moreItems = userController.moreItems;
+      users.addAll(moreItems);
+      emit(UserLoadedState(users: userController.user));
+    } catch (e) {
+      emit(UserErrorState());
+    }
   }
 }
