@@ -1,5 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:demo/controller/user_controller.dart';
+import 'package:demo/screen/demo_key_screen.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -23,10 +24,9 @@ class _DetailScreenState extends State<DetailScreen> {
   final UserBloc userBloc = UserBloc();
 
   GlobalKey<FormState> formKey = GlobalKey<FormState>();
-  final GlobalKey<ScaffoldMessengerState> scafKey = GlobalKey();
 
   bool isReload = false;
-  User valueBack = User(name: "", avatar: "", address: "", id: "");
+  late User valueBack;
 
   Future<void> updateUser() async {
     final Map<String, String> dataUpdate = {
@@ -40,11 +40,10 @@ class _DetailScreenState extends State<DetailScreen> {
       await userController.updateUser(widget.detail.id, dataUpdate);
       if (context.mounted) {
         isReload = true;
-        valueBack = User(
-            id: widget.detail.id,
-            avatar: widget.detail.avatar,
-            name: _nameController.text,
-            address: _addressController.text);
+        valueBack = widget.detail.copyWith(
+          name: _nameController.text,
+          address: _addressController.text,
+        );
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text("Edit Success"),
@@ -62,13 +61,19 @@ class _DetailScreenState extends State<DetailScreen> {
   }
 
   @override
+  void dispose() {
+    _addressController.dispose();
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
         WidgetsBinding.instance.focusManager.primaryFocus?.unfocus();
       },
       child: Scaffold(
-        key: scafKey,
         appBar: AppBar(
           title: const Text('Detail'),
           elevation: 0,
@@ -167,6 +172,17 @@ class _DetailScreenState extends State<DetailScreen> {
                   },
                   child: const Text('Delete'),
                 ),
+              ),
+              IconButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (builder) => const Page1(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.arrow_circle_right),
               ),
             ],
           ),

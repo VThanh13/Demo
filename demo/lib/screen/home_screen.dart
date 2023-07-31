@@ -23,9 +23,9 @@ class _HomeScreenState extends State<HomeScreen> {
   UserController userController = UserController();
   final ScrollController scrollController = ScrollController();
 
-  User detail = User(name: '', avatar: '', address: '', id: '');
+  late User detail;
 
-  void reloadUserScreen() {
+  void pullToRefresh() {
     userController.isLoadMore = true;
     userBloc.page = 1;
     userBloc.users.clear();
@@ -34,14 +34,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void navigateToDetail() {
     AutoRouter.of(context).push(DetailRoute(detail: detail)).then((value) {
-      if (value.runtimeType == String) {
-        userBloc.users.removeWhere((element) => element.id == value);
-        userBloc.add(ClickToRemoveUserEvent());
-      }
-      if (value.runtimeType == User) {
-        userBloc.users[userBloc.users
-            .indexWhere((element) => element.id == detail.id)] = value as User;
-        userBloc.add(ClickToEditUserEvent());
+      if (value != null) {
+        if (value.runtimeType == String) {
+          userBloc.users.removeWhere((element) => element.id == value);
+          userBloc.add(ClickToRemoveUserEvent());
+        }
+        if (value.runtimeType == User) {
+          userBloc.users[userBloc.users
+                  .indexWhere((element) => element.id == detail.id)] =
+              value as User;
+          userBloc.add(ClickToEditUserEvent());
+        }
       }
     });
   }
@@ -88,40 +91,32 @@ class _HomeScreenState extends State<HomeScreen> {
           } else if (state is UserLoadedState) {
             return RefreshIndicator(
               onRefresh: () async {
-                reloadUserScreen();
+                pullToRefresh();
               },
-              color: Colors.white,
-              backgroundColor: Colors.blue,
-              displacement: 20,
-              child: SizedBox(
-                width: double.maxFinite,
-                height: MediaQuery.of(context).size.height,
-                child: ListView.builder(
-                    shrinkWrap: true,
-                    controller: scrollController,
-                    itemCount: userBloc.users.length + 1,
-                    itemBuilder: (context, index) {
-                      return index < userBloc.users.length
-                          ? InkWell(
-                              onTap: () {
-                                detail = userBloc.users[index];
-                                navigateToDetail();
-                              },
-                              child: UserItem(
-                                userBloc: userBloc,
-                                index: index,
-                              ),
-                            )
-                          : userController.isLoadMore == true &&
-                                  userBloc.moreItems.isNotEmpty
-                              ? const Center(
-                                  child: CircularProgressIndicator(),
-                                )
-                              : const Center(
-                                  child: Text('No more items'),
-                                );
-                    }),
-              ),
+              child: ListView.builder(
+                  controller: scrollController,
+                  itemCount: userBloc.users.length + 1,
+                  itemBuilder: (context, index) {
+                    return index < userBloc.users.length
+                        ? InkWell(
+                            onTap: () {
+                              detail = userBloc.users[index];
+                              navigateToDetail();
+                            },
+                            child: UserItem(
+                              userBloc: userBloc,
+                              index: index,
+                            ),
+                          )
+                        : userController.isLoadMore == true &&
+                                userBloc.moreItems.isNotEmpty
+                            ? const Center(
+                                child: CircularProgressIndicator(),
+                              )
+                            : const Center(
+                                child: Text('No more items'),
+                              );
+                  }),
             );
           } else {
             return const SizedBox();

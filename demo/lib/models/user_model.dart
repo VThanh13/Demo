@@ -36,4 +36,17 @@ class User {
         "address": address,
         "id": id,
       };
+
+  User copyWith({
+    String? name,
+    String? avatar,
+    String? address,
+    String? id,
+  }) {
+    return User(
+        name: name ?? this.name,
+        avatar: avatar ?? this.avatar,
+        address: address ?? this.address,
+        id: id ?? this.id);
+  }
 }
