@@ -148,11 +148,8 @@ class _DetailScreenState extends State<DetailScreen> {
                                       .deleteUser(widget.detail.id);
                                   if (context.mounted) {
                                     isReload = true;
-                                    // AutoRouter.of(context).popUntil((route) {
-                                    //   route.settings.name == HomeRoute.name;
-                                    //   value;
-                                    //   return true;
-                                    // });
+                                    // AutoRouter.of(context).popUntil((route) =>
+                                    //     route.settings.name == HomeRoute.name);
                                     String value = widget.detail.id;
                                     Navigator.pop(context);
                                     AutoRouter.of(context).pop(value);

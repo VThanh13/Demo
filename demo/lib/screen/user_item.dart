@@ -36,8 +36,10 @@ class UserItem extends StatelessWidget {
             children: [
               Text(
                 userBloc.users[index].name,
-                style:
-                    const TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
               Text(
                 userBloc.users[index].address,

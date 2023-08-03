@@ -22,12 +22,7 @@ class UserErrorState extends UserState {}
 
 class UserLoadingMore extends UserState {}
 
-class UserLoadMoreSuccess extends UserState {
-  final List<User> users;
-  UserLoadMoreSuccess({
-    required this.users,
-  });
-}
+class UserStopLoadMore extends UserState {}
 
 class ClickToEditUserState extends UserState {}
 

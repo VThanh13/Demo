@@ -26,7 +26,7 @@ class _HomeScreenState extends State<HomeScreen> {
   late User detail;
 
   void pullToRefresh() {
-    userController.isLoadMore = true;
+    userBloc.isLoadMore = true;
     userBloc.page = 1;
     userBloc.users.clear();
     userBloc.add(UserInitialEvent());
@@ -53,7 +53,6 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     userBloc.add(UserInitialEvent());
-    userController.getUserInfo();
     scrollController.addListener(() async {
       if (scrollController.position.pixels ==
           scrollController.position.maxScrollExtent) {
@@ -99,6 +98,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   itemBuilder: (context, index) {
                     return index < userBloc.users.length
                         ? InkWell(
+                            onDoubleTap: () {},
                             onTap: () {
                               detail = userBloc.users[index];
                               navigateToDetail();
@@ -108,7 +108,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               index: index,
                             ),
                           )
-                        : userController.isLoadMore == true &&
+                        : userBloc.isLoadMore == true &&
                                 userBloc.moreItems.isNotEmpty
                             ? const Center(
                                 child: CircularProgressIndicator(),
