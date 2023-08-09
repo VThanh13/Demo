@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:demo/controller/user_controller.dart';
 import 'package:demo/core/bloc/user_bloc/user_bloc.dart';
@@ -23,17 +25,26 @@ class _HomeScreenState extends State<HomeScreen> {
   UserController userController = UserController();
   final ScrollController scrollController = ScrollController();
 
+  final homeKey = GlobalKey<ScaffoldState>();
+
   late User detail;
 
-  void pullToRefresh() {
+  bool isLoading = false;
+
+  Future<void> pullToRefresh() async {
     userBloc.isLoadMore = true;
     userBloc.page = 1;
     userBloc.users.clear();
-    userBloc.add(UserInitialEvent());
+    userBloc.add(ClickToReloadEvent());
+    userBloc.completer ??= Completer();
+    await userBloc.completer?.future;
+    userBloc.completer = null;
   }
 
-  void navigateToDetail() {
-    AutoRouter.of(context).push(DetailRoute(detail: detail)).then((value) {
+  Future navigateToDetail() async {
+    await AutoRouter.of(context)
+        .push(DetailRoute(detail: detail))
+        .then((value) {
       if (value != null) {
         if (value.runtimeType == String) {
           userBloc.users.removeWhere((element) => element.id == value);
@@ -70,58 +81,79 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: homeKey,
       appBar: AppBar(
         title: const Text('Home'),
         elevation: 0,
       ),
-      body: BlocBuilder(
-        bloc: userBloc,
-        builder: (context, state) {
-          if (state is UserLoadingState) {
-            return const Center(
-              child: SizedBox(
-                height: 30,
-                width: 30,
-                child: CircularProgressIndicator(),
-              ),
-            );
-          } else if (state is UserErrorState) {
-            return const Text('Error!');
-          } else if (state is UserLoadedState) {
-            return RefreshIndicator(
-              onRefresh: () async {
-                pullToRefresh();
-              },
-              child: ListView.builder(
+      body: RefreshIndicator.adaptive(
+        onRefresh: () async {
+          await pullToRefresh();
+        },
+        child: BlocBuilder(
+          bloc: userBloc,
+          builder: (context, state) {
+            if (state is UserLoadingState) {
+              return const Center(
+                child: SizedBox(
+                  height: 30,
+                  width: 30,
+                  child: CircularProgressIndicator(),
+                ),
+              );
+            } else if (state is UserErrorState) {
+              return Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Center(
+                    child: Text('Error!'),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      userBloc.add(UserInitialEvent());
+                    },
+                    icon: const Icon(Icons.refresh_outlined),
+                  ),
+                ],
+              );
+            } else if (state is UserLoadedState) {
+              return ListView.builder(
                   controller: scrollController,
                   itemCount: userBloc.users.length + 1,
                   itemBuilder: (context, index) {
                     return index < userBloc.users.length
                         ? InkWell(
-                            onDoubleTap: () {},
-                            onTap: () {
+                            onTap: () async {
                               detail = userBloc.users[index];
-                              navigateToDetail();
+                              if (context.router.current.name ==
+                                  HomeRoute.name) {
+                                navigateToDetail();
+                              }
                             },
-                            child: UserItem(
-                              userBloc: userBloc,
-                              index: index,
+                            child: Ink(
+                              color: index % 2 == 0
+                                  ? const Color(0xffFAFAFA)
+                                  : const Color(0xffE5E5E5),
+                              child: UserItem(
+                                userBloc: userBloc,
+                                index: index,
+                              ),
                             ),
                           )
                         : userBloc.isLoadMore == true &&
                                 userBloc.moreItems.isNotEmpty
                             ? const Center(
-                                child: CircularProgressIndicator(),
+                                child: CircularProgressIndicator.adaptive(),
                               )
                             : const Center(
                                 child: Text('No more items'),
                               );
-                  }),
-            );
-          } else {
-            return const SizedBox();
-          }
-        },
+                  });
+            } else {
+              return const SizedBox();
+            }
+          },
+        ),
       ),
     );
   }

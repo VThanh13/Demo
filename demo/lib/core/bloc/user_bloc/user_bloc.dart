@@ -16,6 +16,7 @@ class UserBloc extends Bloc<UserEvent, UserState> {
     on<ClickToEditUserEvent>(clickToEditUserEvent);
     on<ClickToRemoveUserEvent>(clickToRemoveUserEvent);
     on<ClickToLoadMoreUserEvent>(clickToLoadMoreUserEvent);
+    on<ClickToReloadEvent>(clickToReloadEvent);
   }
 
   List<User> users = [];
@@ -27,6 +28,8 @@ class UserBloc extends Bloc<UserEvent, UserState> {
   bool isLoadMore = true;
 
   UserController userController = UserController();
+
+  Completer? completer;
 
   FutureOr<void> userInitialEvent(
       UserInitialEvent event, Emitter<UserState> emit) async {
@@ -83,17 +86,40 @@ class UserBloc extends Bloc<UserEvent, UserState> {
             emit(UserLoadedState(users: users));
           }
         } else {
-          emit(UserErrorState());
           throw Exception(
               'API failed with status code: ${response.statusCode}');
         }
       } on DioException catch (e) {
         ErrorHandle.handleError(e);
-        emit(UserErrorState());
       } catch (e) {
-        emit(UserErrorState());
         throw Exception('API call failed with exception: $e');
       }
+    }
+  }
+
+  FutureOr<void> clickToReloadEvent(
+      ClickToReloadEvent event, Emitter<UserState> emit) async {
+    try {
+      final response = await UserService().getUser('$baseUrl?page=1&limit=10');
+      if (response.statusCode == 200) {
+        users.clear();
+        users.addAll((response.data ?? []).map((e) => User.fromJson(e)));
+        moreItems.add(
+          User(name: "", avatar: "", address: "", id: ""),
+        );
+        emit(UserLoadedState(users: users));
+      } else {
+        emit(UserErrorState());
+        throw Exception('API failed with status code: ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      ErrorHandle.handleError(e);
+      emit(UserErrorState());
+    } catch (e) {
+      emit(UserErrorState());
+      throw Exception('API call failed with exception: $e');
+    } finally {
+      completer?.complete();
     }
   }
 }

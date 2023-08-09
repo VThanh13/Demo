@@ -18,7 +18,6 @@ class UserItem extends StatelessWidget {
       height: 100,
       width: MediaQuery.of(context).size.width - 10,
       padding: const EdgeInsets.fromLTRB(15, 10, 0, 10),
-      color: index % 2 == 0 ? const Color(0xffFAFAFA) : const Color(0xffE5E5E5),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisAlignment: MainAxisAlignment.start,

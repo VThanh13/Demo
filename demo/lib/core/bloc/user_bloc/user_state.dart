@@ -20,6 +20,8 @@ class UserLoadedState extends UserState {
 
 class UserErrorState extends UserState {}
 
+class UserLoadMoreError extends UserState {}
+
 class UserLoadingMore extends UserState {}
 
 class UserStopLoadMore extends UserState {}
