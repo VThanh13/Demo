@@ -95,8 +95,6 @@ class UserBloc extends Bloc<UserEvent, UserState> {
         ErrorHandle.handleError(e);
       } catch (e) {
         throw Exception('API call failed with exception: $e');
-      } finally {
-        completer?.complete();
       }
     }
   }

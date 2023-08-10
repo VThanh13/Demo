@@ -51,13 +51,11 @@ class _DetailScreenState extends State<DetailScreen> {
                 ),
               ),
             );
-        if (context.mounted) {
-          isReload = true;
-          valueBack = widget.detail.copyWith(
-            name: _nameController.text,
-            address: _addressController.text,
-          );
-        }
+        isReload = true;
+        valueBack = widget.detail.copyWith(
+          name: _nameController.text,
+          address: _addressController.text,
+        );
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

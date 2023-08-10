@@ -67,9 +67,6 @@ class _HomeScreenState extends State<HomeScreen> {
           scrollController.position.maxScrollExtent) {
         userBloc.isLoadingMore = true;
         userBloc.add(ClickToLoadMoreUserEvent());
-        userBloc.completer ??= Completer();
-        await userBloc.completer?.future;
-        userBloc.completer = null;
       }
     });
   }
@@ -117,50 +114,43 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               );
             } else if (state is UserLoadedState) {
-              return Stack(
-                children: [
-                  ListView.builder(
-                      controller: scrollController,
-                      itemCount: userBloc.users.length + 1,
-                      itemBuilder: (context, index) {
-                        final Color color = index % 2 == 0
-                            ? const Color(0xffFAFAFA)
-                            : const Color(0xffE5E5E5);
-                        return index < userBloc.users.length
-                            ? InkWell(
-                                onTap: () async {
-                                  detail = userBloc.users[index];
-                                  if (context.router.current.name ==
-                                      HomeRoute.name) {
-                                    navigateToDetail();
-                                  }
-                                },
-                                child: UserItem(
-                                  userBloc: userBloc,
-                                  index: index,
-                                  color: color,
+              return ListView.builder(
+                  controller: scrollController,
+                  itemCount: userBloc.users.length + 1,
+                  itemBuilder: (context, index) {
+                    final Color color = index % 2 == 0
+                        ? const Color(0xffFAFAFA)
+                        : const Color(0xffE5E5E5);
+                    return index < userBloc.users.length
+                        ? InkWell(
+                            onTap: () async {
+                              detail = userBloc.users[index];
+                              if (context.router.current.name ==
+                                  HomeRoute.name) {
+                                navigateToDetail();
+                              }
+                            },
+                            child: UserItem(
+                              userBloc: userBloc,
+                              index: index,
+                              color: color,
+                            ),
+                          )
+                        : userBloc.isLoadMore == true &&
+                                userBloc.moreItems.isNotEmpty
+                            ? const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.only(bottom: 20, top: 30),
+                                  child: CircularProgressIndicator.adaptive(),
                                 ),
                               )
-                            : userBloc.isLoadMore == true &&
-                                    userBloc.moreItems.isNotEmpty
-                                ? const Center(
-                                    child: Padding(
-                                      padding:
-                                          EdgeInsets.only(bottom: 20, top: 30),
-                                      child:
-                                          CircularProgressIndicator.adaptive(),
-                                    ),
-                                  )
-                                : const Center(
-                                    child: Padding(
-                                      padding:
-                                          EdgeInsets.only(bottom: 20, top: 30),
-                                      child: Text('No more items'),
-                                    ),
-                                  );
-                      }),
-                ],
-              );
+                            : const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.only(bottom: 20, top: 30),
+                                  child: Text('No more items'),
+                                ),
+                              );
+                  });
             } else {
               return const SizedBox();
             }
