@@ -3,20 +3,23 @@ import 'package:flutter/material.dart';
 import '../core/bloc/user_bloc/user_bloc.dart';
 
 class UserItem extends StatelessWidget {
+  final UserBloc userBloc;
+  final int index;
+  final Color? color;
+
   const UserItem({
     super.key,
     required this.userBloc,
     required this.index,
+    this.color,
   });
-
-  final UserBloc userBloc;
-  final int index;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       height: 100,
-      width: MediaQuery.of(context).size.width - 10,
+      color: color,
+      width: MediaQuery.sizeOf(context).width - 10,
       padding: const EdgeInsets.fromLTRB(15, 10, 0, 10),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,

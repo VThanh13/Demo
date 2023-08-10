@@ -27,6 +27,8 @@ class UserBloc extends Bloc<UserEvent, UserState> {
 
   bool isLoadMore = true;
 
+  bool? isLoadingMore;
+
   UserController userController = UserController();
 
   Completer? completer;
@@ -93,6 +95,8 @@ class UserBloc extends Bloc<UserEvent, UserState> {
         ErrorHandle.handleError(e);
       } catch (e) {
         throw Exception('API call failed with exception: $e');
+      } finally {
+        completer?.complete();
       }
     }
   }

@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../core/bloc/user_bloc/user_bloc.dart';
+import '../core/common/loading_dialog.dart';
 import '../models/user_model.dart';
 
 @RoutePage()
@@ -27,6 +28,9 @@ class _DetailScreenState extends State<DetailScreen> {
 
   bool isReload = false;
   late User valueBack;
+  bool? isDeleting;
+
+  ValueNotifier<bool> isDelete = ValueNotifier(false);
 
   Future<void> updateUser() async {
     final Map<String, String> dataUpdate = {
@@ -38,19 +42,20 @@ class _DetailScreenState extends State<DetailScreen> {
 
     if (formKey.currentState!.validate()) {
       try {
-        await userController.updateUser(widget.detail.id, dataUpdate);
+        await userController
+            .updateUser(widget.detail.id, dataUpdate)
+            .whenComplete(
+              () => ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Edit Success"),
+                ),
+              ),
+            );
         if (context.mounted) {
           isReload = true;
           valueBack = widget.detail.copyWith(
             name: _nameController.text,
             address: _addressController.text,
-          );
-        }
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("Edit Success"),
-            ),
           );
         }
       } catch (e) {
@@ -92,9 +97,7 @@ class _DetailScreenState extends State<DetailScreen> {
             icon: const Icon(Icons.arrow_back),
             onPressed: () {
               ScaffoldMessenger.of(context).removeCurrentSnackBar();
-              isReload == true
-                  ? AutoRouter.of(context).pop(valueBack)
-                  : AutoRouter.of(context).pop();
+              AutoRouter.of(context).pop(isReload == true ? valueBack : null);
             },
           ),
         ),
@@ -158,52 +161,68 @@ class _DetailScreenState extends State<DetailScreen> {
                 child: ElevatedButton(
                   onPressed: () {
                     showDialog(
+                        barrierDismissible: false,
                         context: context,
                         builder: (builder) {
-                          return CupertinoAlertDialog(
-                            title: const Text('Do you want to delete?'),
-                            actions: [
-                              TextButton(
-                                onPressed: () async {
-                                  showDialog(
-                                      barrierDismissible: false,
-                                      context: context,
-                                      builder: (builder) {
-                                        return const LoadingDialog();
-                                      });
-                                  try {
-                                    await userController
-                                        .deleteUser(widget.detail.id)
-                                        .whenComplete(
-                                          () => Navigator.pop(context),
-                                        );
-                                    if (context.mounted) {
-                                      isReload = true;
-                                      // AutoRouter.of(context).popUntil((route) =>
-                                      //     route.settings.name == HomeRoute.name);
-                                      String value = widget.detail.id;
-                                      Navigator.pop(context);
-                                      AutoRouter.of(context).pop(value);
-                                    }
-                                  } catch (e) {
-                                    Navigator.pop(context);
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text("Delete Failed"),
+                          return ValueListenableBuilder(
+                              valueListenable: isDelete,
+                              builder: (context, delete, _) {
+                                return CupertinoAlertDialog(
+                                  title: Text(isDelete.value == true
+                                      ? 'Deleting'
+                                      : 'Do you want to delete?'),
+                                  actions: [
+                                    if (isDelete.value == false)
+                                      TextButton(
+                                        onPressed: () async {
+                                          isDelete.value = true;
+                                          try {
+                                            await userController
+                                                .deleteUser(widget.detail.id)
+                                                .whenComplete(() {
+                                              Navigator.pop(context);
+                                              if (context.mounted) {
+                                                isReload = true;
+                                                // AutoRouter.of(context).popUntil((route) =>
+                                                //     route.settings.name == HomeRoute.name);
+                                                String value = widget.detail.id;
+                                                AutoRouter.of(context)
+                                                    .pop(value);
+                                              }
+                                            });
+                                          } catch (e) {
+                                            Navigator.pop(context);
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              const SnackBar(
+                                                content: Text("Delete Failed"),
+                                              ),
+                                            );
+                                          }
+                                        },
+                                        child: const Text('Delete'),
                                       ),
-                                    );
-                                  }
-                                },
-                                child: const Text('Delete'),
-                              ),
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.pop(context);
-                                },
-                                child: const Text('Cancel'),
-                              ),
-                            ],
-                          );
+                                    if (isDelete.value == false)
+                                      TextButton(
+                                        onPressed: () {
+                                          Navigator.pop(context);
+                                        },
+                                        child: const Text('Cancel'),
+                                      ),
+                                    if (isDelete.value == true)
+                                      const Center(
+                                        child: Padding(
+                                          padding: EdgeInsets.only(
+                                            top: 20,
+                                            bottom: 20,
+                                          ),
+                                          child: CircularProgressIndicator
+                                              .adaptive(),
+                                        ),
+                                      ),
+                                  ],
+                                );
+                              });
                         });
                   },
                   child: const Text('Delete'),
@@ -213,25 +232,6 @@ class _DetailScreenState extends State<DetailScreen> {
           ),
         ),
       ),
-    );
-  }
-}
-
-class LoadingDialog extends StatelessWidget {
-  const LoadingDialog({
-    super.key,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return const SimpleDialog(
-      elevation: 0,
-      backgroundColor: Colors.transparent,
-      children: [
-        Center(
-          child: CircularProgressIndicator.adaptive(),
-        )
-      ],
     );
   }
 }

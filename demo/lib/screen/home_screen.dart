@@ -25,8 +25,6 @@ class _HomeScreenState extends State<HomeScreen> {
   UserController userController = UserController();
   final ScrollController scrollController = ScrollController();
 
-  final homeKey = GlobalKey<ScaffoldState>();
-
   late User detail;
 
   bool isLoading = false;
@@ -67,7 +65,11 @@ class _HomeScreenState extends State<HomeScreen> {
     scrollController.addListener(() async {
       if (scrollController.position.pixels ==
           scrollController.position.maxScrollExtent) {
+        userBloc.isLoadingMore = true;
         userBloc.add(ClickToLoadMoreUserEvent());
+        userBloc.completer ??= Completer();
+        await userBloc.completer?.future;
+        userBloc.completer = null;
       }
     });
   }
@@ -81,7 +83,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      key: homeKey,
       appBar: AppBar(
         title: const Text('Home'),
         elevation: 0,
@@ -95,9 +96,8 @@ class _HomeScreenState extends State<HomeScreen> {
           builder: (context, state) {
             if (state is UserLoadingState) {
               return const Center(
-                child: SizedBox(
-                  height: 30,
-                  width: 30,
+                child: SizedBox.square(
+                  dimension: 30,
                   child: CircularProgressIndicator(),
                 ),
               );
@@ -117,38 +117,50 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               );
             } else if (state is UserLoadedState) {
-              return ListView.builder(
-                  controller: scrollController,
-                  itemCount: userBloc.users.length + 1,
-                  itemBuilder: (context, index) {
-                    return index < userBloc.users.length
-                        ? InkWell(
-                            onTap: () async {
-                              detail = userBloc.users[index];
-                              if (context.router.current.name ==
-                                  HomeRoute.name) {
-                                navigateToDetail();
-                              }
-                            },
-                            child: Ink(
-                              color: index % 2 == 0
-                                  ? const Color(0xffFAFAFA)
-                                  : const Color(0xffE5E5E5),
-                              child: UserItem(
-                                userBloc: userBloc,
-                                index: index,
-                              ),
-                            ),
-                          )
-                        : userBloc.isLoadMore == true &&
-                                userBloc.moreItems.isNotEmpty
-                            ? const Center(
-                                child: CircularProgressIndicator.adaptive(),
+              return Stack(
+                children: [
+                  ListView.builder(
+                      controller: scrollController,
+                      itemCount: userBloc.users.length + 1,
+                      itemBuilder: (context, index) {
+                        final Color color = index % 2 == 0
+                            ? const Color(0xffFAFAFA)
+                            : const Color(0xffE5E5E5);
+                        return index < userBloc.users.length
+                            ? InkWell(
+                                onTap: () async {
+                                  detail = userBloc.users[index];
+                                  if (context.router.current.name ==
+                                      HomeRoute.name) {
+                                    navigateToDetail();
+                                  }
+                                },
+                                child: UserItem(
+                                  userBloc: userBloc,
+                                  index: index,
+                                  color: color,
+                                ),
                               )
-                            : const Center(
-                                child: Text('No more items'),
-                              );
-                  });
+                            : userBloc.isLoadMore == true &&
+                                    userBloc.moreItems.isNotEmpty
+                                ? const Center(
+                                    child: Padding(
+                                      padding:
+                                          EdgeInsets.only(bottom: 20, top: 30),
+                                      child:
+                                          CircularProgressIndicator.adaptive(),
+                                    ),
+                                  )
+                                : const Center(
+                                    child: Padding(
+                                      padding:
+                                          EdgeInsets.only(bottom: 20, top: 30),
+                                      child: Text('No more items'),
+                                    ),
+                                  );
+                      }),
+                ],
+              );
             } else {
               return const SizedBox();
             }
